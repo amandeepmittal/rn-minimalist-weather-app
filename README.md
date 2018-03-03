@@ -82,7 +82,7 @@ Change the `<Text>` to
 <Text>Minimalist Weather App</Text>
 ```
 
- and you will see the output being rendered and the app is reloaded live. You don't have to refresh it to see the changes.
+and you will see the output being rendered and the app is reloaded live. You don't have to refresh it to see the changes.
 
 ![ss9](https://i.imgur.com/8gZJrdG.png)
 
@@ -99,18 +99,19 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default class App extends React.Component {
-
   state = {
     isLoading: false
-  }
+  };
 
   render() {
-    const {isLoading} = this.state
+    const { isLoading } = this.state;
     return (
       <View style={styles.container}>
-        {isLoading ? null : <View>
-          <Text>Minimalist Weather App</Text>
-        </View>}
+        {isLoading ? null : (
+          <View>
+            <Text>Minimalist Weather App</Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -126,4 +127,114 @@ const styles = StyleSheet.create({
 });
 ```
 
-The above code states that, when our local state object is false, we will show the name of the applicaiton. 
+The above code states that when our local state object `isLoading` is false, we will show the name of the applicaiton. This is what we are going to render. Later on, instead of displaying the name of application we will be showing the weather here once our API has successfully fetch the data. For now, I am sticking to this message because first we are going to work on, what if our app is in the state of loading? What should we display?
+
+## Using Lottie
+
+We will be using [Lottie](https://www.lottiefiles.com/) for an animated loading screen. It is an opensource library that renders Adobe Effects by providing easy to use animations just like static images. Installing Lottie module in a project can a bit tricky but fortunately, Expo provides support for it. We do not have to install anything since we are using Expo. Sine it is in Alpha mode, do not get worried by the word `DangerZone`.
+
+Import the library, in App.js:
+
+```
+import { DangerZone } from 'expo';
+const { Lottie } = DangerZone;
+```
+
+Then include a variable in our local state called `animation` which will help in playing and restarting the itself. I am using [this file](https://www.lottiefiles.com/110-location) for our animation, of course you are free to choose whichever.
+
+```javascript
+state = {
+  isLoading: true,
+  animation: null
+};
+```
+
+We will define to custom functions: `_playAnimation` and `_loadAnimationAsync` that perform the animation and load the animation from the internet using the `fetch` API. We will also be pre-mounting our animation using `componentWillMount()` method availble to us by core React. In this Life cycle method, when the state is set, it can be called before the initial render. In general it use to prepare either the first render or update the state before the render. This is why we are using it. We need to update the state we defined.
+
+```javascript
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { DangerZone } from 'expo';
+const { Lottie } = DangerZone;
+
+export default class App extends React.Component {
+  state = {
+    isLoading: true,
+    animation: null
+  };
+
+  componentWillMount() {
+    this._playAnimation();
+  }
+
+  _playAnimation = () => {
+    if (!this.state.animation) {
+      this._loadAnimationAsync();
+    } else {
+      this.animation.reset();
+      this.animation.play();
+    }
+  };
+
+  _loadAnimationAsync = async () => {
+    let result = await fetch(
+      'https://www.lottiefiles.com/storage/datafiles/a795e9d1bd5672fd901329d51661db5c/JSON/location.json'
+    );
+
+    this.setState(
+      { animation: JSON.parse(result._bodyText) },
+      this._playAnimation
+    );
+  };
+
+  render() {
+    const { isLoading } = this.state;
+
+    return (
+      <View style={styles.container}>
+        {isLoading ? (
+          <View style={styles.animationContainer}>
+            {this.state.animation && (
+              <Lottie
+                ref={animation => {
+                  this.animation = animation;
+                }}
+                style={styles.loadingAnimation}
+                source={this.state.animation}
+              />
+            )}
+          </View>
+        ) : (
+          <View>
+            <Text>Minimalist Weather App</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  animationContainer: {
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1
+  },
+  loadingAnimation: {
+    width: 400,
+    height: 400,
+    backgroundColor: 'transparent'
+  }
+});
+```
+
+We have defined some styles for our animation to render as per our need through `animationContainer` and `loadingAnimation`. Also note that, temporarily, I have set our `isLoading` state to true to see if our animation is working.
+
+![ss10](https://i.imgur.com/z0P4J74.gif)
