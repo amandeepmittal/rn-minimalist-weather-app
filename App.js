@@ -1,58 +1,54 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { DangerZone } from 'expo';
-const { Lottie } = DangerZone;
+import { StyleSheet, Text, View, Animated } from 'react-native';
+
+import { API_KEY } from './utils/WeatherAPIKey';
+
+import Weather from './components/Weather';
 
 export default class App extends React.Component {
   state = {
     isLoading: true,
-    animation: null
+    temperature: 0,
+    weatherCondition: null,
+    error: null
   };
 
-  componentWillMount() {
-    this._playAnimation();
+  componentDidMount() {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        this.fetchWeahter(position.coords.latitude, position.coords.longitude);
+      },
+      error => {
+        this.setState({
+          error: 'Error Getting Weather Condtions'
+        });
+      }
+    );
   }
 
-  _playAnimation = () => {
-    if (!this.state.animation) {
-      this._loadAnimationAsync();
-    } else {
-      this.animation.reset();
-      this.animation.play();
-    }
-  };
-
-  _loadAnimationAsync = async () => {
-    let result = await fetch(
-      'https://www.lottiefiles.com/storage/datafiles/a795e9d1bd5672fd901329d51661db5c/JSON/location.json'
-    );
-
-    this.setState(
-      { animation: JSON.parse(result._bodyText) },
-      this._playAnimation
-    );
-  };
+  fetchWeahter(lat, lon) {
+    fetch(
+      `http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&APPID=${API_KEY}&units=metric`
+    )
+      .then(res => res.json())
+      .then(json => {
+        // console.log(json);
+        this.setState({
+          temperature: json.main.temp,
+          weatherCondition: json.weather[0].main,
+          isLoading: false
+        });
+      });
+  }
 
   render() {
-    const { isLoading } = this.state;
+    const { isLoading, weatherCondition, temperature } = this.state;
     return (
       <View style={styles.container}>
         {isLoading ? (
-          <View style={styles.animationContainer}>
-            {this.state.animation && (
-              <Lottie
-                ref={animation => {
-                  this.animation = animation;
-                }}
-                style={styles.loadingAnimation}
-                source={this.state.animation}
-              />
-            )}
-          </View>
+          <Text>Fetching The Weather</Text>
         ) : (
-          <View>
-            <Text>Minimalist Weather App</Text>
-          </View>
+          <Weather weather={weatherCondition} temperature={temperature} />
         )}
       </View>
     );
@@ -62,19 +58,6 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  animationContainer: {
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1
-  },
-  loadingAnimation: {
-    width: 400,
-    height: 400,
-    backgroundColor: 'transparent'
+    backgroundColor: '#fff'
   }
 });

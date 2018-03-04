@@ -127,7 +127,388 @@ const styles = StyleSheet.create({
 });
 ```
 
-The above code states that when our local state object `isLoading` is false, we will show the name of the applicaiton. This is what we are going to render. Later on, instead of displaying the name of application we will be showing the weather here once our API has successfully fetch the data. For now, I am sticking to this message because first we are going to work on, what if our app is in the state of loading? What should we display?
+The above code states that when our local state object `isLoading` is false, we will show the name of the applicaiton. This is what we are going to render. Later on, instead of displaying the name of application we will be showing the weather here once our API has successfully fetch the data. For now, I am sticking to this message because first we are going to work on, what if our app is in the state of loading? Let's add a text message to indicate that the app is fetching the data.
+
+```javascript
+import React from 'react';
+import { StyleSheet, Text, View, Animated } from 'react-native';
+
+export default class App extends React.Component {
+  state = {
+    isLoading: true
+  };
+
+  render() {
+    const { isLoading } = this.state;
+    return (
+      <View style={styles.container}>
+        {isLoading ? (
+          <Text>Fetching The Weather</Text>
+        ) : (
+          <View>
+            <Text>Minimalist Weather App</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }
+});
+```
+
+When our app is done loading the data from the API, we will set the state of `isLoading` to false.
+
+![ss11](https://i.imgur.com/YrJYuHf.png)
+
+## First Screen
+
+We will define a new Weather component at `./components/Weather.js`. The boilerplate code of every weather condition screen is going to be the same. It will be divided in two views, a header and a body. The header will show the weather condition icon and temperature and the body will display the text associated with the weather condition.
+
+In Weather.js, we will start by defining two containers inside the main container: `headerContainer` and `bodyContainer`. Do note that we are defining `Weather` component not as a class but a function in order to recieve props and since it will not be managing a state.
+
+```javascript
+import React from 'react';
+import { View, Text, Stylesheet } from 'react-native';
+
+const Weather = () => {
+  return (
+    <View style={styles.container}>
+      <View style={styles.headerContainer} />
+      <View style={styles.bodyContainer} />
+    </View>
+  );
+};
+
+const styles = StyleSheet({
+  container: {
+    flex: 1
+  },
+  headerContainer: {},
+  bodyContainer: {}
+});
+
+export default Weather;
+```
+
+We will be using `MatericalCommunityIcons` that comes with expo (one of the perks) as a sub library of a humongous library called `vector-icons`.
+
+```javascript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+const Weather = () => {
+  return (
+    <View style={styles.weatherContainer}>
+      <View style={styles.headerContainer}>
+        <MaterialCommunityIcons size={48} name="weather-sunny" color={'#fff'} />
+        <Text style={styles.tempText}>Temperature˚</Text>
+      </View>
+      <View style={styles.bodyContainer}>
+        <Text style={styles.title}>So Sunny</Text>
+        <Text style={styles.subtitle}>It hurts my eyes!</Text>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  weatherContainer: {
+    flex: 1,
+    backgroundColor: '#f7b733'
+  },
+  headerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  tempText: {
+    fontSize: 48,
+    color: '#fff'
+  },
+  bodyContainer: {
+    flex: 2,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    paddingLeft: 25,
+    marginBottom: 40
+  },
+  title: {
+    fontSize: 48,
+    color: '#fff'
+  },
+  subtitle: {
+    fontSize: 24,
+    color: '#fff'
+  }
+});
+
+export default Weather;
+```
+
+This how our app looks after the prototypal stage is complete.
+
+![ss12](https://i.imgur.com/OygEOHY.png)
+
+## Fetching The Data
+
+To fetch real time weather data I found [Open Weather Map API](https://openweathermap.org/) to be highly useful and consistent. To communicate with the API you are going to need an API key. Register yourself as a user on the site, and get your API key. Please note that it takes at least 10 minutes for Open Weather API to activate the API key. Once it is available, tag along.
+
+Go to the [API section](https://openweathermap.org/api) and you will see that our need is satisfied by the Current Weather data. I am going to store my API key in `./utils/WeatherAPIKey.js` file. I know not the best name for a file.
+
+```javascript
+export const API_KEY = 'YOUR_API_KEY HERE';
+```
+
+The way the Open Weather API works is that we need to provide it coordinates using device's location in terms of longitude and latitude. It will then fetch the data from its server which will be a JSON object. From the server, right now we need two things, the temperature, and the weather condition. We should have temperature and the a weather condition stored in our local state in `App.js`.
+
+```javascript
+import React from 'react';
+import { StyleSheet, Text, View, Animated } from 'react-native';
+
+import { API_KEY } from './utils/WeatherAPIKey';
+
+import Weather from './components/Weather';
+
+export default class App extends React.Component {
+  state = {
+    isLoading: false,
+    temperature: 0,
+    weatherCondition: null,
+    error: null
+  };
+
+  componentDidMount() {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        this.fetchWeahter(position.coords.latitude, position.coords.longitude);
+      },
+      error => {
+        this.setState({
+          error: 'Error Gettig Weather Condtions'
+        });
+      }
+    );
+  }
+
+  fetchWeahter(lat = 25, lon = 25) {
+    fetch(
+      `http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&APPID=${API_KEY}&units=metric`
+    )
+      .then(res => res.json())
+      .then(json => {
+        console.log(json);
+      });
+  }
+
+  render() {
+    const { isLoading } = this.state;
+    return (
+      <View style={styles.container}>
+        {isLoading ? <Text>Fetching The Weather</Text> : <Weather />}
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  }
+});
+```
+
+We start by importing the API key we just defined and then updating our state with `temperature`, `weatherCondition`, and `error`. We are using `componentDidMount()` a lifecycle method which helps us re-render once our API is done fetching the data. It will also help us in updating our stata. We are also using JavaScript `navigator` API to get the current location. This is where a JavaScript API will communicate with a native one using a bridge. We pass on the values of latitude and longitude to our custom function `fetchWeather` where the API of Open Weather Map is called.
+
+The result we get is in JSON format, and if you console log it, you will be able to see result as a JSON object in Expo terminal where there lot of values. We only need the value of temperature and the weahter condition. We then update local state with the new values obtained. `&units=metric` at the end of our API call converts the temperature from kelvin to celsius.
+
+```javascript
+.then(json => {
+        // console.log(json);
+        this.setState({
+          temperature: json.main.temp,
+          weatherCondition: json.weather[0].main,
+          isLoading: false
+        });
+```
+
+Now, all we have to do is pass the value two of our local state as props to the `Weather` Component and then update it such that it can receive those props.
+
+First, in `App.js`:
+
+```javascript
+<Weather weather={weatherCondition} temperature={temperature} />
+```
+
+Update the `Weather.js`:
+
+```javascript
+const Weather = ({ weather, temperature }) => {
+  return (
+    <View style={styles.weatherContainer}>
+      <View style={styles.headerContainer}>
+        <MaterialCommunityIcons size={48} name="weather-sunny" color={'#fff'} />
+        <Text style={styles.tempText}>{temperature}˚</Text>
+      </View>
+      <View style={styles.bodyContainer}>
+        <Text style={styles.title}>{weather}</Text>
+        <Text style={styles.subtitle}>It hurts my eyes!</Text>
+      </View>
+    </View>
+  );
+};
+```
+
+![ss13](https://i.imgur.com/PVSTtdi.png)
+
+Since we have done the hard part of fetching the real time data, we must make `Weather` component behave [dynamically to the values](https://openweathermap.org/weather-conditions) it is getting. All this dynamic part is going to be assoicated with one thing which we are getting from our local state, `weatherCondition`.
+
+## Dynamic Behaviour
+
+Using `weatherCondition` we can define the background changes, title, subtitle and weather icon changes. Let's start by pre-defining weather conditions in a file `./utils/WeatherConditions.js`.
+
+```javascript
+export const weatherConditions = {
+  Rain: {
+    color: '#005BEA',
+    title: 'Raining',
+    subtitle: 'Get a cup of coffee',
+    icon: 'weather-rainy'
+  },
+  Clear: {
+    color: '#f7b733',
+    title: 'So Sunny',
+    subtitle: 'It is hurting my eyes',
+    icon: 'weather-sunny'
+  },
+  Thunderstorm: {
+    color: '#616161',
+    title: 'A Storm is coming',
+    subtitle: 'Because Gods are angry',
+    icon: 'weather-lightning'
+  },
+  Clouds: {
+    color: '#1F1C2C',
+    title: 'Clouds',
+    subtitle: 'Everywhere',
+    icon: 'weather-cloudy'
+  },
+
+  Snow: {
+    color: '#00d2ff',
+    title: 'Snow',
+    subtitle: 'Get out and build a snowman for me',
+    icon: 'weather-snowy'
+  },
+  Drizzle: {
+    color: '#076585',
+    title: 'Drizzle',
+    subtitle: 'Partially raining...',
+    icon: 'weather-hail'
+  },
+  Haze: {
+    color: '#66A6FF',
+    title: 'Haze',
+    subtitle: 'Another name for Partial Raining',
+    icon: 'weather-hail'
+  },
+  Mist: {
+    color: '#3CD3AD',
+    title: 'Mist',
+    subtitle: "Don't roam in forests!",
+    icon: 'weather-fog'
+  }
+};
+```
+
+These weather condtions are provided from Open Weather API [here](https://openweathermap.org/weather-conditions). Then, let's import this file in our `Weather.js`. We will also define PropTypes now for the two props we are receiving from `App.js`. Take a look below, it is simple.
+
+```javascript
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import PropTypes from 'prop-types';
+import { weatherConditions } from '../utils/WeatherConditions';
+
+const Weather = ({ weather, temperature }) => {
+  return (
+    <View
+      style={[
+        styles.weatherContainer,
+        { backgroundColor: weatherConditions[weather].color }
+      ]}
+    >
+      <View style={styles.headerContainer}>
+        <MaterialCommunityIcons
+          size={72}
+          name={weatherConditions[weather].icon}
+          color={'#fff'}
+        />
+        <Text style={styles.tempText}>{temperature}˚</Text>
+      </View>
+      <View style={styles.bodyContainer}>
+        <Text style={styles.title}>{weatherConditions[weather].title}</Text>
+        <Text style={styles.subtitle}>
+          {weatherConditions[weather].subtitle}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+Weather.propTypes = {
+  temperature: PropTypes.number.isRequired,
+  weather: PropTypes.string
+};
+
+const styles = StyleSheet.create({
+  weatherContainer: {
+    flex: 1
+  },
+  headerContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around'
+  },
+  tempText: {
+    fontSize: 72,
+    color: '#fff'
+  },
+  bodyContainer: {
+    flex: 2,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    paddingLeft: 25,
+    marginBottom: 40
+  },
+  title: {
+    fontSize: 60,
+    color: '#fff'
+  },
+  subtitle: {
+    fontSize: 24,
+    color: '#fff'
+  }
+});
+
+export default Weather;
+```
+
+Most of the source code is same. We are now just making some additions by using available props with weather condtions and to dynamically change the background, icon, weather name and the subtitle. You can play around with the styling to make it look more minimalistic or more exquisite, it is upto you.
+
+![ss15](https://i.imgur.com/VpAUMVL.gif)
+
+---
 
 ## Using Lottie
 
@@ -149,7 +530,7 @@ state = {
 };
 ```
 
-We will define to custom functions: `_playAnimation` and `_loadAnimationAsync` that perform the animation and load the animation from the internet using the `fetch` API. We will also be pre-mounting our animation using `componentWillMount()` method availble to us by core React. In this Life cycle method, when the state is set, it can be called before the initial render. In general it use to prepare either the first render or update the state before the render. This is why we are using it. We need to update the state we defined.
+We will now define to custom functions: `_playAnimation` and `_loadAnimationAsync` that perform the animation and load the animation from the internet using the `fetch` API. We will also be pre-mounting our animation using `componentWillMount()` method availble to us by core React. In this Life cycle method, when the state is set, it can be called before the initial render. In general it use to prepare either the first render or update the state before the render. This is why we are using it. We need to update the state we defined.
 
 ```javascript
 import React from 'react';
@@ -224,8 +605,7 @@ const styles = StyleSheet.create({
   animationContainer: {
     backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1
+    justifyContent: 'center'
   },
   loadingAnimation: {
     width: 400,
@@ -235,6 +615,14 @@ const styles = StyleSheet.create({
 });
 ```
 
-We have defined some styles for our animation to render as per our need through `animationContainer` and `loadingAnimation`. Also note that, temporarily, I have set our `isLoading` state to true to see if our animation is working.
+I am using [LottieFiles.com](lottiefiles.com) to get the animation component. If you are familiar with Adobe Effects, you can create your animations using it. If you are like me, you can explore We have defined some styles for our animation to render as per our need through `animationContainer` and `loadingAnimation`. Also note that, temporarily, I have set our `isLoading` state to true to see if our animation is working.
 
 ![ss10](https://i.imgur.com/z0P4J74.gif)
+
+Congratulations! First dynamic component of your mobile application 🎉 🎉!
+
+## Build The App
+
+In this module we are going to continue to work on our static prototype of our application. What we need is to have text field that displays the current temperature and an icon corressponding to it. Building a basic screen will help us further when bring our weather API to generate real time data.
+
+First, we have to switch our `isLoading` back to true such that we see the other screen in our simulator or device.
