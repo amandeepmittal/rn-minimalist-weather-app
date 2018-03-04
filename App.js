@@ -1,6 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, Animated } from 'react-native';
 
+import { DangerZone } from 'expo';
+const { Lottie } = DangerZone;
+
 import { API_KEY } from './utils/WeatherAPIKey';
 
 import Weather from './components/Weather';
@@ -46,7 +49,9 @@ export default class App extends React.Component {
     return (
       <View style={styles.container}>
         {isLoading ? (
-          <Text>Fetching The Weather</Text>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Fetching The Weather</Text>
+          </View>
         ) : (
           <Weather weather={weatherCondition} temperature={temperature} />
         )}
@@ -59,5 +64,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff'
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFDE4'
+  },
+  loadingText: {
+    fontSize: 30
   }
 });
