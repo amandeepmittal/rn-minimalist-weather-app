@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "rn-minimalist-weather-app",
-    "description": "This project is really great.",
+    "description": "Walkthrough Project for an Article. Minimalist Weather App",
     "slug": "rn-minimalist-weather-app",
     "privacy": "public",
     "sdkVersion": "25.0.0",
