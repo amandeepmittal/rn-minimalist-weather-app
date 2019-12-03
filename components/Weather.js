@@ -5,29 +5,37 @@ import PropTypes from 'prop-types';
 import { weatherConditions } from '../utils/WeatherConditions';
 
 const Weather = ({ weather, temperature }) => {
-  return (
-    <View
-      style={[
-        styles.weatherContainer,
-        { backgroundColor: weatherConditions[weather].color }
-      ]}
-    >
-      <View style={styles.headerContainer}>
-        <MaterialCommunityIcons
-          size={72}
-          name={weatherConditions[weather].icon}
-          color={'#fff'}
-        />
-        <Text style={styles.tempText}>{temperature}˚</Text>
+  if (weather != null) {
+    return (
+      <View
+        style={[
+          styles.weatherContainer,
+          { backgroundColor: weatherConditions[weather].color }
+        ]}
+      >
+        <View style={styles.headerContainer}>
+          <MaterialCommunityIcons
+            size={72}
+            name={weatherConditions[weather].icon}
+            color={'#fff'}
+          />
+          <Text style={styles.tempText}>{temperature}˚</Text>
+        </View>
+        <View style={styles.bodyContainer}>
+          <Text style={styles.title}>{weatherConditions[weather].title}</Text>
+          <Text style={styles.subtitle}>
+            {weatherConditions[weather].subtitle}
+          </Text>
+        </View>
       </View>
-      <View style={styles.bodyContainer}>
-        <Text style={styles.title}>{weatherConditions[weather].title}</Text>
-        <Text style={styles.subtitle}>
-          {weatherConditions[weather].subtitle}
-        </Text>
+    );
+  } else {
+    return (
+      <View>
+        <Text>Oh no, something went wrong</Text>
       </View>
-    </View>
-  );
+    )
+  };
 };
 
 Weather.propTypes = {
